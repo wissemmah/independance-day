@@ -14,7 +14,7 @@ pygame.mixer.init()
 
 # Écran et horloge
 ecran = pygame.display.set_mode((LARGEUR_JEU, HAUTEUR_JEU))
-pygame.display.set_caption("Independence Day : Démo Edition - 250th Anniversary")
+pygame.display.set_caption("Independence Day : Deluxe Edition - 250th Anniversary")
 clock = pygame.time.Clock()
 
 # Polices Bebas (si disponibles) -> renvoie (font, petite_font, moyenne_font, grosse_font)
@@ -45,3 +45,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
