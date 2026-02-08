@@ -1,0 +1,28 @@
+"""
+Constantes du jeu Independence Day
+"""
+
+# --- Dimensions (Format 16:9) ---
+LARGEUR_JEU = 1280
+HAUTEUR_JEU = 720
+FPS = 60
+
+# --- Couleurs ---
+NOIR = (0, 0, 0)
+BLANC = (255, 255, 255)
+VERT = (0, 255, 0)
+VERT_MILITAIRE = (46, 139, 87)
+GRIS_FONCE = (50, 50, 50)
+GRIS_TORNADE_PETITE = (180, 180, 180)
+GRIS_TORNADE_MOYENNE = (120, 100, 100)
+GRIS_TORNADE_GROSSE = (80, 50, 50)
+JAUNE = (255, 255, 0)
+ROUGE = (255, 0, 0)
+ROUGE_SANG = (180, 0, 0)
+ORANGE = (255, 165, 0)
+OR = (255, 215, 0)
+BLEU_NUIT = (20, 20, 60)
+BLEU_BOUCLIER = (0, 191, 255)
+BLEU = (15, 32, 74)
+BLEU_FONCE = (10, 20, 50)
+CYAN = (0, 255, 255)
