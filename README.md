@@ -29,6 +29,27 @@ python run_tests.py      # smoke tests runtime
 python check_assets.py   # vérifie les assets
 ```
 
+## Binaires (Windows / macOS)
+
+Sans Python : télécharge les artefacts de la [Release](https://github.com/wissemmah/independance-day/releases) ou du workflow **Build releases**.
+
+| Plateforme | Fichier | Lancement |
+|------------|---------|-----------|
+| Windows | `IndependenceDay-Windows.zip` | Dézipper → double-clic `IndependenceDay.exe` |
+| macOS | `IndependenceDay-macOS.dmg` | Ouvrir le DMG → glisser l’app dans Applications |
+
+### Build local
+
+```bash
+# macOS → .app + .dmg
+bash scripts/build_mac_dmg.sh
+
+# Windows → dossier + .zip (à lancer sous Windows)
+scripts\build_windows.bat
+```
+
+Ou déclencher le workflow GitHub Actions **Build releases** (onglet Actions → Run workflow).
+
 ## Contrôles
 
 | Action | Touche |

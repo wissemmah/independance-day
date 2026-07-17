@@ -17,7 +17,9 @@ from constantes import (
 )
 import os
 
-FONT_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "assets", "fonts", "BebasNeue-Regular.ttf")
+from chemins import asset_path
+
+FONT_PATH = asset_path("fonts", "BebasNeue-Regular.ttf")
 
 
 def charger_polices_bebas():

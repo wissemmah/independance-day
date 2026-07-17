@@ -3,6 +3,7 @@ Gestionnaire de musique et effets sonores
 """
 import pygame
 import os
+from chemins import resource_root, is_frozen
 
 
 class GestionnaireMusique:
@@ -23,9 +24,10 @@ class GestionnaireMusique:
 
     def charger_musiques(self):
         """Charge les musiques des différents niveaux"""
-        dossier = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        dossier = resource_root()
         dossier_musiques = os.path.join(dossier, "assets", "musiques")
-        os.makedirs(dossier_musiques, exist_ok=True)
+        if not is_frozen():
+            os.makedirs(dossier_musiques, exist_ok=True)
 
         noms_niveaux = {
             1: ["Terre.mp3", "Terre.ogg", "Terre.wav", "terre.mp3", "terre.ogg"],
@@ -43,9 +45,10 @@ class GestionnaireMusique:
 
     def charger_musique_menu(self):
         """Charge la musique du menu"""
-        dossier = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        dossier = resource_root()
         dossier_musiques = os.path.join(dossier, "assets", "musiques")
-        os.makedirs(dossier_musiques, exist_ok=True)
+        if not is_frozen():
+            os.makedirs(dossier_musiques, exist_ok=True)
 
         noms_possibles = ["musiquedebut.wav", "musiquedebut.mp3", "musiquedebut.ogg", "menu.wav", "menu.mp3"]
 
@@ -57,9 +60,10 @@ class GestionnaireMusique:
 
     def charger_effets(self):
         """Charge les effets sonores"""
-        dossier = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        dossier = resource_root()
         dossier_sons = os.path.join(dossier, "assets", "sons")
-        os.makedirs(dossier_sons, exist_ok=True)
+        if not is_frozen():
+            os.makedirs(dossier_sons, exist_ok=True)
 
         noms_effets = {
             "tir": ["tir.wav", "tir.ogg", "shoot.wav", "shoot.ogg"],

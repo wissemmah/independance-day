@@ -5,6 +5,7 @@ import pygame
 import random
 import os
 from constantes import *
+from chemins import resource_root
 
 
 class Boss(pygame.sprite.Sprite):
@@ -47,7 +48,7 @@ class Boss(pygame.sprite.Sprite):
 
         # Animation : charger 2 frames
         self.frames = []
-        dossier = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        dossier = resource_root()
 
         for nom in ["boss1.png", "boss2.png"]:
             chemin = os.path.join(dossier, "assets", "images", nom)

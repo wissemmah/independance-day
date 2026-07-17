@@ -5,12 +5,12 @@ import pygame
 import os
 import math
 from constantes import *
+from chemins import resource_root, is_frozen
 
 
 def charger_image_transparente(nom_fichier, taille):
     """Charge une image avec transparence depuis le dossier assets/images"""
-    # MODIFIER CE CHEMIN :
-    chemin = os.path.join(os.path.dirname(__file__), "assets", "images", nom_fichier)
+    chemin = os.path.join(resource_root(), "assets", "images", nom_fichier)
     try:
         img = pygame.image.load(chemin).convert_alpha()
         return pygame.transform.smoothscale(img, taille)
@@ -21,8 +21,7 @@ def charger_image_transparente(nom_fichier, taille):
 
 def charger_polices():
     """Charge les polices Bebas Neues si disponibles"""
-    dossier = os.path.dirname(__file__)
-    chemin_font = os.path.join(dossier, "assets", "fonts", "BebasNeue-Regular.ttf")
+    chemin_font = os.path.join(resource_root(), "assets", "fonts", "BebasNeue-Regular.ttf")
 
     if os.path.exists(chemin_font):
         try:
@@ -105,7 +104,9 @@ def _generer_image_simple(fullpath, taille, couleur_fond=(50, 50, 70), texte=Non
 
 def assurer_images_assets():
     """S'assure que les images essentielles existent; crée des placeholders sinon."""
-    base = os.path.join(os.path.dirname(__file__), "assets", "images")
+    if is_frozen():
+        return
+    base = os.path.join(resource_root(), "assets", "images")
 
     images_a_creer = [
         (os.path.join(base, "soldier.png"), (50, 60), (80, 120, 80), "S"),

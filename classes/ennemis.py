@@ -5,6 +5,7 @@ import pygame
 import random
 import os
 from constantes import *
+from chemins import resource_root
 
 
 class Tornade(pygame.sprite.Sprite):
@@ -33,7 +34,7 @@ class Tornade(pygame.sprite.Sprite):
 
         # --- ANIMATION : CHARGER STRIP 4 FRAMES ---
         self.frames = []
-        dossier = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        dossier = resource_root()
         strip_path = os.path.join(dossier, "assets", "images", "tornado_strip4.png")
 
         try:
@@ -129,7 +130,7 @@ class UFO(pygame.sprite.Sprite):
         self.valeur = 25
 
         # Charger l'image UFO
-        dossier = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        dossier = resource_root()
         chemin = os.path.join(dossier, "assets", "images", "ufo.png")
         try:
             self.image = pygame.transform.smoothscale(
@@ -209,7 +210,7 @@ class Meteorite(pygame.sprite.Sprite):
 
 
         # Charger l'image de la météorite
-        dossier = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        dossier = resource_root()
         chemin = os.path.join(dossier, "assets", "images", "Meteorite.png")
 
         try:
@@ -282,7 +283,7 @@ class Comet(pygame.sprite.Sprite):
 
         # --- ANIMATION : CHARGER STRIP 4 FRAMES ---
         self.frames = []
-        dossier = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        dossier = resource_root()
         strip_path = os.path.join(dossier, "assets", "images", "comete_strip4.png")
 
         try:

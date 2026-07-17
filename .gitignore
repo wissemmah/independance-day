@@ -23,6 +23,11 @@ Thumbs.db
 data/highscore.json
 .cache/
 
+# Packaging
+build/
+dist/
+*.spec.bak
+
 # Accidental brace-expansion junk folders
 \{classes,utils,assets/
 \{classes,utils,assets

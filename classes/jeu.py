@@ -13,9 +13,10 @@ from classes.lecteur_video import LecteurVideo
 from classes.audio_intro import AudioIntro
 from classes.progression import charger_progression, sauvegarder_progression
 from constantes import DUREE_NIVEAU_SEC, OBJECTIFS_KILLS
+from chemins import resource_root, is_frozen
 
-# Racine du projet (dossier parent de 'classes')
-PROJ_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# Racine du projet (dev) ou bundle PyInstaller
+PROJ_ROOT = resource_root()
 
 
 class Jeu:
@@ -25,10 +26,11 @@ class Jeu:
         self.etat = "MENU"
         self.plein_ecran = False
 
-        try:
-            assurer_images_assets()
-        except Exception:
-            pass
+        if not is_frozen():
+            try:
+                assurer_images_assets()
+            except Exception:
+                pass
 
         self.musique = GestionnaireMusique()
         self.vfx = GestionnaireVFX()
@@ -343,7 +345,7 @@ class Jeu:
     def creer_menus(self):
         """Crée tous les boutons des menus"""
         cx, cy = LARGEUR_JEU // 2, HAUTEUR_JEU // 2
-        dossier = os.path.dirname(os.path.dirname(__file__))
+        dossier = PROJ_ROOT
 
         def charger_image_bouton(nom):
             chemin = os.path.join(dossier, "assets", "images", nom)

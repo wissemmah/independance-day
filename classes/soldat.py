@@ -5,9 +5,9 @@ import pygame
 import os
 from constantes import *
 from utils import charger_image_transparente
+from chemins import resource_root
 
-# Racine du projet
-PROJ_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+PROJ_ROOT = resource_root()
 
 
 class Soldat(pygame.sprite.Sprite):
