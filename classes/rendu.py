@@ -281,14 +281,17 @@ def dessiner_menu(jeu_instance, ecran):
     font_petite = pygame.font.Font(None, 28)
     nb_cles = len(jeu_instance.cles_trouvees)
     couleur_cles = OR if nb_cles >= 4 else BLANC
-    txt_cles = font_petite.render(f"🔑 Clés: {nb_cles}/4", True, couleur_cles)
+    txt_cles = font_petite.render(f"Cles: {nb_cles}/4", True, couleur_cles)
     ecran.blit(txt_cles, (LARGEUR_JEU - txt_cles.get_width() - 20, 20))
+
+    txt_hs = font_petite.render(f"Record: {jeu_instance.high_score}", True, OR)
+    ecran.blit(txt_hs, (LARGEUR_JEU - txt_hs.get_width() - 20, 50))
 
     # Si toutes les clés sont trouvées, afficher un message
     if nb_cles >= 4:
         font_msg = pygame.font.Font(None, 24)
-        txt_msg = font_msg.render("✨ NIVEAU INFINI DÉBLOQUÉ !", True, OR)
-        ecran.blit(txt_msg, (LARGEUR_JEU - txt_msg.get_width() - 20, 55))
+        txt_msg = font_msg.render("NIVEAU INFINI DEBLOQUE !", True, OR)
+        ecran.blit(txt_msg, (LARGEUR_JEU - txt_msg.get_width() - 20, 80))
 
     ecran.blit(jeu_instance.logo_trump, jeu_instance.logo_rect)
 
@@ -330,10 +333,12 @@ def dessiner_gameover(jeu_instance, ecran, grosse_font, font):
     ecran.blit(t_go, t_go.get_rect(center=(LARGEUR_JEU // 2, HAUTEUR_JEU // 2 - 60)))
     t_score = font.render(f"Score Final: {jeu_instance.score_total}", True, OR)
     ecran.blit(t_score, t_score.get_rect(center=(LARGEUR_JEU // 2, HAUTEUR_JEU // 2)))
+    t_hs = font.render(f"Record: {jeu_instance.high_score}", True, JAUNE)
+    ecran.blit(t_hs, t_hs.get_rect(center=(LARGEUR_JEU // 2, HAUTEUR_JEU // 2 + 40)))
     ecran.blit(
         font.render("Appuie sur 'R' pour rejouer", True, BLANC),
         font.render("Appuie sur 'R' pour rejouer", True, BLANC).get_rect(
-            center=(LARGEUR_JEU // 2, HAUTEUR_JEU // 2 + 60))
+            center=(LARGEUR_JEU // 2, HAUTEUR_JEU // 2 + 90))
     )
 
 
@@ -445,6 +450,26 @@ def dessiner_gameplay(jeu_instance, ecran, font, petite_font, grosse_font, moyen
         ecran_draw.blit(jeu_instance.img_vie_ui, (LARGEUR_JEU - 70 - (i * 55), 20))
     txt_nuke = font.render(f"Nuke: {jeu_instance.joueur.nukes} [B]", True, ROUGE)
     ecran_draw.blit(txt_nuke, (20, 60))
+
+    # Clés + high score
+    nb_cles = len(jeu_instance.cles_trouvees)
+    txt_cles = petite_font.render(f"Cles: {nb_cles}/4", True, OR if nb_cles >= 4 else BLANC)
+    ecran_draw.blit(txt_cles, (20, 95))
+    txt_hs = petite_font.render(f"Record: {jeu_instance.high_score}", True, OR)
+    ecran_draw.blit(txt_hs, (20, 120))
+
+    # Objectif kills (niveaux 1-3)
+    objectif = jeu_instance.objectif_kills_actuel()
+    if objectif > 0 and jeu_instance.etat not in ("TRANSITION", "PAUSE"):
+        kills = jeu_instance.ennemis_tues_niveau
+        couleur_obj = VERT if kills >= objectif else BLANC
+        txt_obj = petite_font.render(f"Objectif: {kills}/{objectif}", True, couleur_obj)
+        ecran_draw.blit(txt_obj, (LARGEUR_JEU - txt_obj.get_width() - 20, 80))
+
+    # Combo
+    if jeu_instance.combo >= 2:
+        txt_combo = moyenne_font.render(f"COMBO x{jeu_instance.combo}", True, ORANGE)
+        ecran_draw.blit(txt_combo, (LARGEUR_JEU // 2 - txt_combo.get_width() // 2, 100))
 
     # TIMER - Ne pas afficher pendant la transition et la pause
     if jeu_instance.etat not in ("TRANSITION", "PAUSE"):

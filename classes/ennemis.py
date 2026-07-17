@@ -8,47 +8,26 @@ from constantes import *
 
 
 class Tornade(pygame.sprite.Sprite):
-    """Ennemi Tornade - présent dans tous les niveaux"""
+    """Ennemi Tornade — niveau 1 (descente verticale)."""
 
-    def __init__(self, niveau_jeu):
+    def __init__(self, niveau_jeu=1):
         super().__init__()
-        self.niveau_jeu = niveau_jeu
+        self.niveau_jeu = 1
 
-        # --- TAILLE ET VITESSE SELON NIVEAU ---
-        if niveau_jeu == 1:
-            scale = random.randint(40, 60)
-        elif niveau_jeu == 2:
-            scale = random.randint(50, 80)
-        else:
-            scale = random.randint(60, 100)
-
+        scale = random.randint(40, 70)
         self.largeur = scale
         self.hauteur = int(scale * 1.5)
-        self.vy = int(scale / 10) + random.randint(1, 3)
+        # Vitesse un peu plus variée pour le feeling arcade
+        self.vy = random.randint(2, 5)
 
-        # --- POSITION DE DEPART (TOUJOURS EN HAUT) ---
         self.rect = pygame.Rect(0, 0, self.largeur, self.hauteur)
         self.rect.x = random.randint(0, LARGEUR_JEU - self.largeur)
         self.rect.y = -self.hauteur
 
-        # --- COMPORTEMENT SELON NIVEAU ---
         self.vx = 0
-
-        if niveau_jeu == 1:
-            self.pv = 1
-            self.vx = 0
-            self.couleur = GRIS_TORNADE_PETITE
-            self.valeur = 15
-        elif niveau_jeu == 2:
-            self.pv = 2
-            self.vx = random.choice([-2, 2])
-            self.couleur = GRIS_TORNADE_MOYENNE
-            self.valeur = 15
-        else:
-            self.pv = 3
-            self.vx = random.choice([-3, 3])
-            self.couleur = GRIS_TORNADE_GROSSE
-            self.valeur = 15
+        self.pv = 1
+        self.couleur = GRIS_TORNADE_PETITE
+        self.valeur = 15
 
         self.max_pv = self.pv
 
@@ -134,18 +113,20 @@ class UFO(pygame.sprite.Sprite):
         self.rect.x = random.randint(0, LARGEUR_JEU - self.largeur)
         self.rect.y = -self.hauteur
 
-        # Vitesse plus rapide que les tornades
-        self.vy = random.randint(4, 7)
+        # Vitesse de base + plongeons ponctuels
+        self.vy_base = random.randint(3, 5)
+        self.vy = self.vy_base
 
-        # Mouvement zigzag
         self.vx = random.choice([-4, -3, 3, 4])
         self.zigzag_timer = 0
-        self.zigzag_interval = random.randint(20, 40)  # Changement de direction fréquent
+        self.zigzag_interval = random.randint(20, 40)
+        self.dive_timer = random.randint(40, 90)
+        self.en_plongeon = False
+        self.plongeon_restant = 0
 
-        # Stats
         self.pv = 2
         self.max_pv = 2
-        self.valeur = 20
+        self.valeur = 25
 
         # Charger l'image UFO
         dossier = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -166,21 +147,29 @@ class UFO(pygame.sprite.Sprite):
         self.rect.size = self.image.get_size()
 
     def update(self):
-        """Met à jour l'UFO"""
-        # Mouvement vertical
-        self.rect.y += self.vy
+        """Met à jour l'UFO (zigzag + plongeons)."""
+        if self.en_plongeon:
+            self.plongeon_restant -= 1
+            self.vy = self.vy_base + 6
+            if self.plongeon_restant <= 0:
+                self.en_plongeon = False
+                self.vy = self.vy_base
+                self.dive_timer = random.randint(50, 110)
+        else:
+            self.dive_timer -= 1
+            if self.dive_timer <= 0:
+                self.en_plongeon = True
+                self.plongeon_restant = random.randint(12, 22)
 
-        # Mouvement horizontal zigzag
+        self.rect.y += self.vy
         self.rect.x += self.vx
 
-        # Changement de direction pour zigzag
         self.zigzag_timer += 1
         if self.zigzag_timer >= self.zigzag_interval:
             self.zigzag_timer = 0
-            self.vx = -self.vx + random.choice([-1, 0, 1])  # Variation aléatoire
+            self.vx = -self.vx + random.choice([-1, 0, 1])
             self.zigzag_interval = random.randint(20, 40)
 
-        # Rebond sur les bords
         if self.rect.left <= 0:
             self.rect.left = 0
             self.vx = abs(self.vx)
@@ -287,9 +276,9 @@ class Comet(pygame.sprite.Sprite):
         self.vy = random.randint(2, 4)  # Avant : 4-7, maintenant 2-4
 
         # Stats - Plus fortes que les UFO (2 PV) mais pas trop difficiles
-        self.pv = 7  # 7 points de vie (entre UFO et l'ancienne valeur de 10)
-        self.max_pv = 7
-        self.valeur = 25 # Avant : 25 points
+        self.pv = 5
+        self.max_pv = 5
+        self.valeur = 30
 
         # --- ANIMATION : CHARGER STRIP 4 FRAMES ---
         self.frames = []

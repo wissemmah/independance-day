@@ -55,13 +55,22 @@ class GestionnaireVFX:
     def declencher_nuke(self):
         """Déclenche l'effet visuel de la bombe nucléaire"""
         self.flash_nuke = 255
-        self.tremblement_actif = True
-        self.tremblement_intensite = 20  # Intensité du tremblement
-        self.tremblement_duree = 30  # Durée en frames
+        self.declencher_impact(intensite=20, duree=30)
 
     def declencher_degats(self):
         """Déclenche l'effet visuel de dégâts"""
         self.timer_degats_rouge = 15
+        self.declencher_impact(intensite=8, duree=12)
+
+    def declencher_impact(self, intensite=6, duree=10):
+        """Petit tremblement d'écran (kill, hit, etc.)"""
+        # Garde le tremblement le plus fort si plusieurs impacts se chevauchent
+        if self.tremblement_actif and self.tremblement_intensite >= intensite:
+            self.tremblement_duree = max(self.tremblement_duree, duree)
+            return
+        self.tremblement_actif = True
+        self.tremblement_intensite = intensite
+        self.tremblement_duree = duree
 
     def update(self):
         """Met à jour tous les effets"""

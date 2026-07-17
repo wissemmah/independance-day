@@ -14,7 +14,7 @@ def charger_image_transparente(nom_fichier, taille):
     try:
         img = pygame.image.load(chemin).convert_alpha()
         return pygame.transform.smoothscale(img, taille)
-    except:
+    except (pygame.error, FileNotFoundError, OSError):
         surface = pygame.Surface(taille, pygame.SRCALPHA)
         pygame.draw.circle(surface, ROUGE, (taille[0] // 2, taille[1] // 2), taille[0] // 2 - 5)
         return surface

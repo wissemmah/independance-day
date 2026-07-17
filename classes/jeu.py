@@ -11,6 +11,8 @@ from classes.bouton import Bouton, BoutonImage
 from classes.soldat import Soldat
 from classes.lecteur_video import LecteurVideo
 from classes.audio_intro import AudioIntro
+from classes.progression import charger_progression, sauvegarder_progression
+from constantes import DUREE_NIVEAU_SEC, OBJECTIFS_KILLS
 
 # Racine du projet (dossier parent de 'classes')
 PROJ_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -104,9 +106,16 @@ class Jeu:
 
         self.FONTS = charger_polices()
 
-        # Easter egg system
-        self.cles_trouvees = set()
-        self.niveau_infini_debloque = False
+        # Progression persistante
+        prog = charger_progression()
+        self.high_score = prog["high_score"]
+        self.cles_trouvees = set(prog["cles"])
+        self.niveau_infini_debloque = prog["niveau_infini_debloque"] or len(self.cles_trouvees) >= 4
+
+        # Combo / objectifs niveau
+        self.combo = 0
+        self.combo_timer = 0
+        self.ennemis_tues_niveau = 0
 
         # DEBUG MODE
         self.debug_mode = False
@@ -288,6 +297,9 @@ class Jeu:
 
         # Système de clés - NE PAS réinitialiser cles_trouvees (conservées entre parties)
         self.cle_niveau_spawned = False
+        self.combo = 0
+        self.combo_timer = 0
+        self.ennemis_tues_niveau = 0
 
         # Fermer le menu options de la boutique si ouvert
         self.options_boutique_ouvert = False
@@ -301,12 +313,32 @@ class Jeu:
         if hasattr(self, 'boss_temps_limite'):
             delattr(self, 'boss_temps_limite')
 
-        self.temps_niveau = 60
+        self.temps_niveau = DUREE_NIVEAU_SEC
         self.debut_niveau = pygame.time.get_ticks()
         self.temps_pause = 0
         self.temps_pause_debut = 0
 
         self.charger_fond_niveau(1)
+
+    def objectif_kills_actuel(self):
+        """Retourne l'objectif de kills du niveau courant (0 si N/A)."""
+        return OBJECTIFS_KILLS.get(self.niveau, 0)
+
+    def enregistrer_progression(self):
+        """Met à jour high score + clés sur disque."""
+        if self.score_total > self.high_score:
+            self.high_score = self.score_total
+        if len(self.cles_trouvees) >= 4:
+            self.niveau_infini_debloque = True
+        sauvegarder_progression(self.high_score, self.cles_trouvees, self.niveau_infini_debloque)
+
+    def reset_objectifs_niveau(self):
+        """Remet compteurs combo / kills pour un nouveau niveau."""
+        self.combo = 0
+        self.combo_timer = 0
+        self.ennemis_tues_niveau = 0
+        self.cle_niveau_spawned = False
+        self.dernier_spawn = 0
 
     def creer_menus(self):
         """Crée tous les boutons des menus"""
