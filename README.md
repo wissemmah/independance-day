@@ -1,4 +1,47 @@
-Lore (Histoire et univers)
+# Independence Day : Deluxe Edition — 250th Anniversary
+
+Projet réalisé en **février 2026**.
+
+Shoot 'em up arcade horizontal en Python / Pygame : 4 niveaux, boss final, mode infini débloquable via des clés secrètes.
+
+## Prérequis
+
+- Python 3.10+
+- Pygame
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate   # Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+```
+
+## Lancer le jeu
+
+```bash
+python Main.py
+```
+
+Outils utiles :
+
+```bash
+python run_debug.py      # lancement avec options debug
+python run_tests.py      # smoke tests runtime
+python check_assets.py   # vérifie les assets
+```
+
+## Contrôles
+
+| Action | Touche |
+|--------|--------|
+| Déplacement | Flèches gauche / droite |
+| Tir | Automatique |
+| Nuke | `B` |
+| Pause / boutique | `Échap` / pause in-game |
+| Debug | `D` (voir `DEBUG_MODE.md`) |
+
+---
+
+## Lore (Histoire et univers)
 
 Le jeu se déroule lors de la 250ᵉ fête de l’indépendance des États-Unis. Toute une ville est en pleine célébration quand une catastrophe survient : des tornades géantes apparaissent et menacent de tout détruire.
 
@@ -8,7 +51,7 @@ Après la destruction des tornades, le président vient le féliciter avec son c
 
 Une fois l’invasion repoussée, une troisième catastrophe arrive : des météorites foncent vers la Terre. Le héros reçoit un vaisseau spatial ultra-puissant appelé :
 
-Star-Spangled Destroyer X — Édition 250ᵉ anniversaire
+**Star-Spangled Destroyer X — Édition 250ᵉ anniversaire**
 
 Il part dans l’espace pour sauver la planète.
 
@@ -16,83 +59,28 @@ Alors que tout semble terminé, un boss final apparaît : une tête géante enne
 
 Après la victoire, le héros revient sur Terre et est remercié publiquement lors d’une grande célébration.
 
-Gameplay (Mécaniques de jeu)
-Contrôles :
+## Gameplay
 
-Déplacement : flèches directionnelles (gauche / droite)
+### Structure des niveaux
 
-Tir : Automatique
+| Niveau | Menace | Personnage | Objectif |
+|--------|--------|------------|----------|
+| 1 | Tornades | Vétéran au sol | Détruire les tornades (objectif de kills ou survivre au timer) |
+| 2 | Invasion alien | Pilote d’avion | Détruire les UFO (zigzag + plongeons) |
+| 3 | Météorites / comètes | Astronaute | Mix comètes rebondissantes + météorites |
+| 4 | Boss final | Vaisseau | Battre le boss avant la fin du timer |
 
-Mouvement horizontal uniquement (style arcade / shooter)
+### Système de vies
 
-Structure des niveaux
+- 3 vies au départ (représentées par des vaches)
+- À 0 vie = partie perdue
 
-Niveau 1 — Tornades
+### Bonus & mode infini
 
-Personnage : vétéran au sol
+- Items ramassables en passant dessus
+- Une clé secrète apparaît dans chaque niveau (~30 s) : **4/4 clés → mode infini**
+- High score sauvegardé localement dans `data/highscore.json`
 
-Objectif : détruire les tornades
+### Objectif
 
-Arme : fusil
-
-Niveau 2 — Invasion alien
-
-Personnage : pilote d’avion
-
-Objectif : détruire les vaisseaux extraterrestres
-
-Arme : mitrailleuse
-
-Niveau 3 — Météorites
-
-Personnage : astronaute en vaisseau spatial
-
-Objectif : détruire les météorites
-
-Arme : lasers du vaisseau
-
-Niveau 4 — Boss final
-
-Ennemi : tête géante ennemie
-
-Attaque : lasers
-
-Objectif : battre le boss
-
-Système de vies :
-
-Le joueur commence avec 3 vies
-
-Les vies sont représentées par des vaches
-
-À 0 vache = partie perdue
-
-Objets et bonus :
-
-Des items apparaissent pendant les niveaux
-
-Le joueur peut les récupérer en passant dessus
-
-Des clés spéciales apparaissent dans chaque niveau :
-
-Si toutes les clés sont collectées → déblocage du mode infini
-
-Mode infini = ennemis continus + difficulté croissante
-
-Debug Mode :
-
-Appuyer sur D pour activer le mode debug
-
-Plus d’informations disponibles dans le fichier DEBUG_MODE.md
-
-Objectif du jeu
-
-Terminer les 4 niveaux
-
-Obtenir le score le plus élevé possible
-
-Sauver la fête de l’indépendance
-
-Battre le boss final
-
-Débloquer le mode infini si toutes les clés sont récupérées
+Terminer les 4 niveaux, maximiser le score, battre le boss, débloquer le mode infini.

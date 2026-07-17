@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+env/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+
+# IDE / OS
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
+
+# Game runtime
+*.log
+data/highscore.json
+.cache/
+
+# Accidental brace-expansion junk folders
+\{classes,utils,assets/
+\{classes,utils,assets
