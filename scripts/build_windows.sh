@@ -16,15 +16,18 @@ if [[ ! -f "$EXE" ]]; then
   exit 1
 fi
 
-# Prefer PowerShell Compress-Archive on Windows runners
-if command -v powershell.exe >/dev/null 2>&1; then
-  powershell.exe -Command "Compress-Archive -Path '${DIST}/${NAME}/*' -DestinationPath '${DIST}/${NAME}-Windows.zip' -Force"
-elif command -v zip >/dev/null 2>&1; then
-  (cd "$DIST/$NAME" && zip -r "../${NAME}-Windows.zip" .)
-else
-  echo "Aucun outil zip trouvé"
-  exit 1
-fi
+# Zip via Python (chemins bash/Git Bash + PowerShell OK)
+python - <<'PY'
+import zipfile
+from pathlib import Path
 
-echo "OK — ZIP: $DIST/${NAME}-Windows.zip"
-ls -lh "$DIST/${NAME}-Windows.zip"
+root = Path("dist") / "IndependenceDay"
+out = Path("dist") / "IndependenceDay-Windows.zip"
+if out.exists():
+    out.unlink()
+with zipfile.ZipFile(out, "w", compression=zipfile.ZIP_DEFLATED) as zf:
+    for path in root.rglob("*"):
+        if path.is_file():
+            zf.write(path, path.relative_to(root).as_posix())
+print(f"OK — ZIP: {out.resolve()} ({out.stat().st_size // (1024*1024)} Mo)")
+PY
