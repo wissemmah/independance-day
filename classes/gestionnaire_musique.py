@@ -142,6 +142,31 @@ class GestionnaireMusique:
         self.effets_actifs = not self.effets_actifs
         return self.effets_actifs
 
+    def appliquer_volumes(self):
+        """Réapplique volumes musique + SFX."""
+        try:
+            pygame.mixer.music.set_volume(self.volume_musique if self.musique_active else 0)
+        except Exception:
+            pass
+        for snd in self.effets_sonores.values():
+            try:
+                snd.set_volume(self.volume_effets)
+            except Exception:
+                pass
+
+    def cycle_volume(self, kind):
+        """Cycle volume 0 → 0.25 → 0.5 → 0.75 → 1.0."""
+        steps = [0.0, 0.25, 0.5, 0.75, 1.0]
+        attr = "volume_musique" if kind == "musique" else "volume_effets"
+        cur = getattr(self, attr)
+        try:
+            idx = steps.index(round(cur * 4) / 4)
+        except ValueError:
+            idx = 2
+        setattr(self, attr, steps[(idx + 1) % len(steps)])
+        self.appliquer_volumes()
+        return getattr(self, attr)
+
     def jouer_effet(self, nom_effet):
         """Joue un effet sonore"""
         if self.effets_actifs and nom_effet in self.effets_sonores:

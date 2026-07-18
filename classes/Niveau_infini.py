@@ -14,6 +14,8 @@ def update_niveau_infini(jeu_instance):
     # Updates de base
     jeu_instance.update_fond()
     jeu_instance.vfx.update()
+    if hasattr(jeu_instance, "joueur") and jeu_instance.joueur:
+        jeu_instance.joueur.jeu = jeu_instance
     jeu_instance.all_sprites.update()
     jeu_instance.items.update()
 
@@ -26,7 +28,11 @@ def update_niveau_infini(jeu_instance):
             jeu_instance.all_sprites.add(balle)
             jeu_instance.balles.add(balle)
 
-    temps_ecoule = (pygame.time.get_ticks() - jeu_instance.debut_niveau) / 1000
+    if not getattr(jeu_instance, "infini_debut", 0):
+        jeu_instance.infini_debut = jeu_instance.debut_niveau
+    temps_ecoule = (pygame.time.get_ticks() - jeu_instance.infini_debut) / 1000
+    if temps_ecoule >= 300:
+        jeu_instance.try_achievement("infini_5min")
 
     # ===== PROGRESSION INFINIE - DIFFICULTÉ CROISSANTE =====
     # 0-5min : Phases 1-5 - Montée en difficulté classique

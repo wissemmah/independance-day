@@ -44,9 +44,14 @@ Sans Python : télécharge les artefacts de la [Release](https://github.com/wiss
 # macOS → .app + .dmg
 bash scripts/build_mac_dmg.sh
 
+# macOS lite (sans vidéos, plus léger)
+bash scripts/build_lite.sh
+
 # Windows → dossier + .zip (à lancer sous Windows)
 scripts\build_windows.bat
 ```
+
+Signature Gatekeeper : voir [`docs/SIGNING_MACOS.md`](docs/SIGNING_MACOS.md).
 
 Ou déclencher le workflow GitHub Actions **Build releases** (onglet Actions → Run workflow).
 

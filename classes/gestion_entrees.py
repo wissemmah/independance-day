@@ -16,6 +16,22 @@ def gerer_entrees_jeu(jeu_instance):
         if event.type == pygame.QUIT:
             return False
 
+        # Remap en cours
+        if jeu_instance.attente_remap and event.type == pygame.KEYDOWN:
+            jeu_instance.controles[jeu_instance.attente_remap] = event.key
+            jeu_instance.attente_remap = None
+            jeu_instance.enregistrer_progression()
+            _rafraichir_textes_options(jeu_instance)
+            return True
+
+        # Tutoriel
+        if jeu_instance.etat == "TUTORIEL":
+            if event.type == pygame.KEYDOWN or event.type == pygame.MOUSEBUTTONDOWN:
+                jeu_instance.tutoriel_vu = True
+                jeu_instance.etat = "MENU"
+                jeu_instance.enregistrer_progression()
+            continue
+
         # Skip video with SPACE, ESC or mouse click
         if jeu_instance.etat == "VIDEO_INTRO":
             if event.type == pygame.KEYDOWN and event.key in (pygame.K_SPACE, pygame.K_ESCAPE):
@@ -179,27 +195,31 @@ def gerer_entrees_jeu(jeu_instance):
                 jeu_instance.debug_game_speed = max(0.25, jeu_instance.debug_game_speed - 0.25)
                 print(f"[DEBUG] Vitesse du jeu: {jeu_instance.debug_game_speed}x")
 
-            if event.key in (pygame.K_ESCAPE, pygame.K_p) and jeu_instance.etat in ("JEU", "PAUSE"):
+            pause_key = jeu_instance.cle_controle("pause")
+            if event.key in (pause_key, pygame.K_p) and jeu_instance.etat in ("JEU", "PAUSE"):
                 jeu_instance.etat = "PAUSE" if jeu_instance.etat == "JEU" else "JEU"
                 pygame.mouse.set_visible(jeu_instance.etat == "PAUSE")
                 if jeu_instance.etat == "PAUSE":
-                    jeu_instance.scroll_offset = 0  # Reset scroll en ouvrant la pause
+                    jeu_instance.scroll_offset = 0
 
-            if jeu_instance.etat == "GAMEOVER" and event.key == pygame.K_r:
+            restart_key = jeu_instance.cle_controle("restart")
+            if jeu_instance.etat == "GAMEOVER" and event.key == restart_key:
                 jeu_instance.reset_partie()
                 jeu_instance.etat = "JEU"
                 pygame.mouse.set_visible(False)
                 jeu_instance.musique.jouer_musique_niveau(1)
 
-            if jeu_instance.etat == "VICTOIRE" and event.key == pygame.K_r:
+            if jeu_instance.etat == "VICTOIRE" and event.key == restart_key:
                 jeu_instance.reset_partie()
                 jeu_instance.etat = "JEU"
                 pygame.mouse.set_visible(False)
                 jeu_instance.musique.jouer_musique_niveau(1)
 
-            if jeu_instance.etat == "TRANSITION" and event.key == pygame.K_SPACE:
+            valider = jeu_instance.cle_controle("valider")
+            if jeu_instance.etat == "TRANSITION" and event.key == valider:
                 # Level 2 transition with video
-                if jeu_instance.niveau == 2 and os.path.exists(jeu_instance.video_niveau2_path):
+                if (jeu_instance.niveau == 2 and os.path.exists(jeu_instance.video_niveau2_path)
+                        and not getattr(jeu_instance, "lite_mode", False)):
                     from classes.lecteur_video import LecteurVideo
 
                     jeu_instance.musique.arreter_musique()
@@ -217,11 +237,12 @@ def gerer_entrees_jeu(jeu_instance):
                         jeu_instance.etat = "JEU"
                         pygame.mouse.set_visible(False)
                         jeu_instance.debut_niveau = pygame.time.get_ticks()
-                        jeu_instance.cle_niveau_spawned = False  # Réinitialiser pour le nouveau niveau
+                        jeu_instance.cle_niveau_spawned = False
                         jeu_instance.musique.jouer_musique_niveau(2)
 
                 # Level 3 transition with video
-                elif jeu_instance.niveau == 3 and os.path.exists(jeu_instance.video_niveau3_path):
+                elif (jeu_instance.niveau == 3 and os.path.exists(jeu_instance.video_niveau3_path)
+                      and not getattr(jeu_instance, "lite_mode", False)):
                     from classes.lecteur_video import LecteurVideo
 
                     jeu_instance.musique.arreter_musique()
@@ -236,36 +257,34 @@ def gerer_entrees_jeu(jeu_instance):
 
                         jeu_instance.clock_video = pygame.time.Clock()
                     else:
-                        # Pas de vidéo, continuer normalement
                         jeu_instance.etat = "JEU"
                         pygame.mouse.set_visible(False)
                         jeu_instance.debut_niveau = pygame.time.get_ticks()
-                        jeu_instance.cle_niveau_spawned = False  # Réinitialiser pour le nouveau niveau
+                        jeu_instance.cle_niveau_spawned = False
                         jeu_instance.musique.jouer_musique_niveau(3)
 
                 else:
-                    # Autres niveaux ou pas de vidéo
                     jeu_instance.etat = "JEU"
                     pygame.mouse.set_visible(False)
-                    # RÉINITIALISER LE TIMER DU NIVEAU ICI
                     jeu_instance.debut_niveau = pygame.time.get_ticks()
-                    jeu_instance.cle_niveau_spawned = False  # Réinitialiser pour le nouveau niveau
+                    jeu_instance.cle_niveau_spawned = False
 
-            # Nuke avec B
-            if jeu_instance.etat == "JEU" and event.key == pygame.K_b and jeu_instance.joueur.nukes > 0:
+            # Nuke
+            if (jeu_instance.etat == "JEU" and event.key == jeu_instance.cle_controle("nuke")
+                    and jeu_instance.joueur.nukes > 0):
                 jeu_instance.joueur.nukes -= 1
+                jeu_instance.nukes_used_run += 1
+                if jeu_instance.niveau == 4:
+                    jeu_instance.boss_nukes_used += 1
                 jeu_instance.vfx.declencher_nuke()
                 jeu_instance.musique.jouer_effet("nuke")
 
-                # Importer Boss pour vérifier le type
                 from classes.boss import Boss
 
                 for m in list(jeu_instance.mobs):
-                    # Le boss perd seulement 100 PV avec la nuke (au lieu de mourir)
                     if isinstance(m, Boss):
                         m.pv -= 100
                         jeu_instance.vfx.ajouter(m.rect.centerx, m.rect.centery, ORANGE, 30)
-                        print(f"[INFO] Boss touché par la nuke ! PV restants : {m.pv}/{m.max_pv}")
                         if m.pv <= 0:
                             jeu_instance.argent += m.valeur
                             jeu_instance.score_total += m.valeur * 2
@@ -469,33 +488,39 @@ def executer_action_menu(jeu_instance, action):
         return
 
     if action == "LANCER_JEU":
-        jeu_instance.lancer_video_intro()
+        if getattr(jeu_instance, "lite_mode", False):
+            jeu_instance.reset_partie()
+            jeu_instance.etat = "JEU"
+            pygame.mouse.set_visible(False)
+            jeu_instance.musique.jouer_musique_niveau(1)
+        else:
+            jeu_instance.lancer_video_intro()
 
     elif action == "QUITTER":
         pygame.quit()
         sys.exit()
     elif action == "LANCER_NIVEAU_INFINI":
-        # Lancer le niveau infini (Easter Egg)
         jeu_instance.reset_partie()
-        jeu_instance.niveau = 999  # Code spécial pour le niveau infini
+        jeu_instance.niveau = 999
         jeu_instance.niveau_precedent = 999
         jeu_instance.etat = "JEU"
+        jeu_instance.infini_debut = pygame.time.get_ticks()
         pygame.mouse.set_visible(False)
-        jeu_instance.charger_fond_niveau(1)  # Utilise fond.png
-        jeu_instance.musique.jouer_musique_niveau(1)  # Lance la première musique
-        print("[INFO] 🔥 NIVEAU INFINI LANCÉ !")
+        jeu_instance.charger_fond_niveau(1)
+        jeu_instance.musique.jouer_musique_niveau(1)
     elif action == "OUVRIR_OPTIONS_BOUTIQUE":
-        # Toggle du sous-menu options dans la boutique
         jeu_instance.options_boutique_ouvert = not jeu_instance.options_boutique_ouvert
-        # Changer le texte du bouton
         if jeu_instance.options_boutique_ouvert:
-            jeu_instance.btn_options_boutique.texte = "⚙️ FERMER"
+            jeu_instance.btn_options_boutique.texte = "FERMER"
         else:
-            jeu_instance.btn_options_boutique.texte = "⚙️ OPTIONS"
+            jeu_instance.btn_options_boutique.texte = "OPTIONS"
     elif action == "ALLER_OPTIONS":
         jeu_instance.etat = "OPTIONS"
+        _rafraichir_textes_options(jeu_instance)
     elif action == "RETOUR_DEPUIS_OPT":
+        jeu_instance.attente_remap = None
         jeu_instance.etat = "MENU"
+        jeu_instance.enregistrer_progression()
     elif action == "REPRENDRE":
         jeu_instance.etat = "JEU"
         pygame.mouse.set_visible(False)
@@ -509,52 +534,66 @@ def executer_action_menu(jeu_instance, action):
     elif action == "TOGGLE_EFFETS":
         a = jeu_instance.musique.basculer_effets()
         jeu_instance.btns_opt[1].texte = f"Effets : {'ON' if a else 'OFF'}"
+    elif action == "VOL_MUSIQUE":
+        v = jeu_instance.musique.cycle_volume("musique")
+        jeu_instance.btns_opt[2].texte = f"Vol. musique : {int(v * 100)}%"
+    elif action == "VOL_EFFETS":
+        v = jeu_instance.musique.cycle_volume("effets")
+        jeu_instance.btns_opt[3].texte = f"Vol. effets : {int(v * 100)}%"
     elif action == "TOGGLE_FULLSCREEN":
         jeu_instance.plein_ecran = not jeu_instance.plein_ecran
         if jeu_instance.plein_ecran:
             try:
-                # Get actual screen resolution
                 info = pygame.display.Info()
-                screen_width = info.current_w
-                screen_height = info.current_h
-                # Use the actual screen resolution for fullscreen
-                pygame.display.set_mode((screen_width, screen_height), pygame.FULLSCREEN)
+                pygame.display.set_mode((info.current_w, info.current_h), pygame.FULLSCREEN)
             except Exception as e:
-                print(f"[WARN] Fullscreen error: {e}, reverting to windowed")
+                print(f"[WARN] Fullscreen error: {e}")
                 jeu_instance.plein_ecran = False
                 pygame.display.set_mode((LARGEUR_JEU, HAUTEUR_JEU))
         else:
             pygame.display.set_mode((LARGEUR_JEU, HAUTEUR_JEU))
-        jeu_instance.btns_opt[2].texte = f"Plein Écran : {'OUI' if jeu_instance.plein_ecran else 'NON'}"
-
-    # Actions depuis la pause
+        jeu_instance.btns_opt[4].texte = f"Plein Écran : {'OUI' if jeu_instance.plein_ecran else 'NON'}"
+    elif action == "REMAP_NUKE":
+        jeu_instance.attente_remap = "nuke"
+        jeu_instance.btns_opt[5].texte = "Appuie sur une touche..."
+    elif action == "REMAP_PAUSE":
+        jeu_instance.attente_remap = "pause"
+        jeu_instance.btns_opt[6].texte = "Appuie sur une touche..."
     elif action == "TOGGLE_MUSIQUE_PAUSE":
         a = jeu_instance.musique.basculer_musique()
         jeu_instance.btns_options_boutique_submenu[0].texte = f"Musique: {'ON' if a else 'OFF'}"
-        # Mettre à jour aussi le bouton dans les options
         jeu_instance.btns_opt[0].texte = f"Musique : {'ON' if a else 'OFF'}"
     elif action == "TOGGLE_EFFETS_PAUSE":
         a = jeu_instance.musique.basculer_effets()
         jeu_instance.btns_options_boutique_submenu[1].texte = f"Effets: {'ON' if a else 'OFF'}"
-        # Mettre à jour aussi le bouton dans les options
         jeu_instance.btns_opt[1].texte = f"Effets : {'ON' if a else 'OFF'}"
     elif action == "TOGGLE_FULLSCREEN_PAUSE":
         jeu_instance.plein_ecran = not jeu_instance.plein_ecran
         if jeu_instance.plein_ecran:
             try:
-                # Get actual screen resolution
                 info = pygame.display.Info()
-                screen_width = info.current_w
-                screen_height = info.current_h
-                # Use the actual screen resolution for fullscreen
-                pygame.display.set_mode((screen_width, screen_height), pygame.FULLSCREEN)
+                pygame.display.set_mode((info.current_w, info.current_h), pygame.FULLSCREEN)
             except Exception as e:
-                print(f"[WARN] Fullscreen error: {e}, reverting to windowed")
+                print(f"[WARN] Fullscreen error: {e}")
                 jeu_instance.plein_ecran = False
                 pygame.display.set_mode((LARGEUR_JEU, HAUTEUR_JEU))
         else:
             pygame.display.set_mode((LARGEUR_JEU, HAUTEUR_JEU))
-        jeu_instance.btns_options_boutique_submenu[
-            2].texte = f"Plein Écran: {'OUI' if jeu_instance.plein_ecran else 'NON'}"
-        # Mettre à jour aussi le bouton dans les options
-        jeu_instance.btns_opt[2].texte = f"Plein Écran : {'OUI' if jeu_instance.plein_ecran else 'NON'}"
+        jeu_instance.btns_options_boutique_submenu[2].texte = f"Plein Écran: {'OUI' if jeu_instance.plein_ecran else 'NON'}"
+        jeu_instance.btns_opt[4].texte = f"Plein Écran : {'OUI' if jeu_instance.plein_ecran else 'NON'}"
+
+
+def _rafraichir_textes_options(jeu):
+    jeu.btns_opt[0].texte = f"Musique : {'ON' if jeu.musique.musique_active else 'OFF'}"
+    jeu.btns_opt[1].texte = f"Effets : {'ON' if jeu.musique.effets_actifs else 'OFF'}"
+    jeu.btns_opt[2].texte = f"Vol. musique : {int(jeu.musique.volume_musique * 100)}%"
+    jeu.btns_opt[3].texte = f"Vol. effets : {int(jeu.musique.volume_effets * 100)}%"
+    jeu.btns_opt[4].texte = f"Plein Écran : {'OUI' if jeu.plein_ecran else 'NON'}"
+    nuke_name = pygame.key.name(jeu.cle_controle("nuke")).upper()
+    pause_name = pygame.key.name(jeu.cle_controle("pause")).upper()
+    jeu.btns_opt[5].texte = f"Remap Nuke ({nuke_name})"
+    jeu.btns_opt[6].texte = f"Remap Pause ({pause_name})"
+    if jeu.attente_remap == "nuke":
+        jeu.btns_opt[5].texte = "Appuie sur une touche..."
+    if jeu.attente_remap == "pause":
+        jeu.btns_opt[6].texte = "Appuie sur une touche..."

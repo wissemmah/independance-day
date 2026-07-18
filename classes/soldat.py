@@ -89,14 +89,25 @@ class Soldat(pygame.sprite.Sprite):
         self.nukes = 0
         self.dernier_tir = 0
 
-    def update(self):
+    def update(self, *args, **kwargs):
         """Met à jour la position du joueur et l'animation"""
-        self.rect.centerx = pygame.mouse.get_pos()[0]
+        jeu = getattr(self, "jeu", None)
+        keys = pygame.key.get_pressed()
+        vitesse = 8
+        used_keys = False
+        if jeu is not None:
+            if keys[jeu.cle_controle("gauche")]:
+                self.rect.x -= vitesse
+                used_keys = True
+            if keys[jeu.cle_controle("droite")]:
+                self.rect.x += vitesse
+                used_keys = True
+        if not used_keys:
+            self.rect.centerx = pygame.mouse.get_pos()[0]
         self.rect.clamp_ip(pygame.Rect(0, 0, LARGEUR_JEU, HAUTEUR_JEU))
         if self.invincible and pygame.time.get_ticks() > self.fin_invincibilite:
             self.invincible = False
-        
-        # Animer le soldat (niveau 1)
+
         if self.niveau == 1 and self.animation_frames:
             self.frame_timer += 1
             if self.frame_timer >= self.animation_speed:

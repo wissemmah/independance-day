@@ -11,8 +11,13 @@ from classes.bouton import Bouton, BoutonImage
 from classes.soldat import Soldat
 from classes.lecteur_video import LecteurVideo
 from classes.audio_intro import AudioIntro
-from classes.progression import charger_progression, sauvegarder_progression
-from constantes import DUREE_NIVEAU_SEC, OBJECTIFS_KILLS
+from classes.progression import (
+    charger_progression,
+    sauvegarder_tout,
+    ajouter_score_leaderboard,
+    debloquer_achievement,
+)
+from constantes import DUREE_NIVEAU_SEC, OBJECTIFS_KILLS, CONTROLES_DEFAUT, POWERUP_DUREE_MS
 from chemins import resource_root, is_frozen
 
 # Racine du projet (dev) ou bundle PyInstaller
@@ -111,8 +116,31 @@ class Jeu:
         # Progression persistante
         prog = charger_progression()
         self.high_score = prog["high_score"]
+        self.leaderboard = prog["leaderboard"]
         self.cles_trouvees = set(prog["cles"])
         self.niveau_infini_debloque = prog["niveau_infini_debloque"] or len(self.cles_trouvees) >= 4
+        self.tutoriel_vu = prog["tutoriel_vu"]
+        self.achievements = list(prog["achievements"])
+        self.settings = prog["settings"]
+        self.controles = dict(self.settings.get("controles", CONTROLES_DEFAUT))
+        self.attente_remap = None
+        self.achievement_toast = None
+        self.achievement_toast_timer = 0
+        self.hitstop_frames = 0
+        self.nukes_used_run = 0
+        self.boss_nukes_used = 0
+        self.powerup_actif = None
+        self.powerup_fin = 0
+        self.game_speed_override = 1.0
+        self.infini_debut = 0
+        self.splash_timer = 90  # frames splash au demarrage
+
+        # Appliquer settings audio
+        self.musique.volume_musique = self.settings["volume_musique"]
+        self.musique.volume_effets = self.settings["volume_effets"]
+        self.musique.musique_active = self.settings["musique_active"]
+        self.musique.effets_actifs = self.settings["effets_actifs"]
+        self.musique.appliquer_volumes()
 
         # Combo / objectifs niveau
         self.combo = 0
@@ -123,11 +151,13 @@ class Jeu:
         self.debug_mode = False
         self.debug_invincible = False
         self.debug_infinite_ennemis = False
-        self.debug_game_speed = 1.0  # Multiplicateur de vitesse (1.0 = normal)
+        self.debug_game_speed = 1.0
         self.debug_spawner_actif = False
-        self.debug_argent_infini = False  # Argent infini
+        self.debug_argent_infini = False
 
         self.musique.jouer_musique_menu()
+        if not self.tutoriel_vu:
+            self.etat = "TUTORIEL"
 
     def charger_logo_trump(self):
         """Charge le logo Trump"""
@@ -302,6 +332,13 @@ class Jeu:
         self.combo = 0
         self.combo_timer = 0
         self.ennemis_tues_niveau = 0
+        self.hitstop_frames = 0
+        self.nukes_used_run = 0
+        self.boss_nukes_used = 0
+        self.powerup_actif = None
+        self.powerup_fin = 0
+        self.game_speed_override = 1.0
+        self.infini_debut = 0
 
         # Fermer le menu options de la boutique si ouvert
         self.options_boutique_ouvert = False
@@ -326,13 +363,68 @@ class Jeu:
         """Retourne l'objectif de kills du niveau courant (0 si N/A)."""
         return OBJECTIFS_KILLS.get(self.niveau, 0)
 
+    def cle_controle(self, nom):
+        return self.controles.get(nom, CONTROLES_DEFAUT.get(nom))
+
+    def activer_powerup(self, kind):
+        self.powerup_actif = kind
+        self.powerup_fin = pygame.time.get_ticks() + POWERUP_DUREE_MS
+        if kind == "bouclier":
+            self.joueur.invincible = True
+            self.joueur.fin_invincibilite = self.powerup_fin
+        elif kind == "spread":
+            self.joueur.niveau_tir = max(self.joueur.niveau_tir, 3)
+        elif kind == "ralentir":
+            self.game_speed_override = 0.55
+
+    def update_powerups(self):
+        if self.powerup_actif and pygame.time.get_ticks() > self.powerup_fin:
+            if self.powerup_actif == "ralentir":
+                self.game_speed_override = 1.0
+            self.powerup_actif = None
+
+    def try_achievement(self, cle):
+        self.achievements, info = debloquer_achievement(self.achievements, cle)
+        if info:
+            self.achievement_toast = f"{info['titre']} — {info['desc']}"
+            self.achievement_toast_timer = 180
+            # save without re-entering achievement checks
+            self._sauver_etat()
+
+    def _sauver_etat(self):
+        self.settings["volume_musique"] = self.musique.volume_musique
+        self.settings["volume_effets"] = self.musique.volume_effets
+        self.settings["musique_active"] = self.musique.musique_active
+        self.settings["effets_actifs"] = self.musique.effets_actifs
+        self.settings["controles"] = dict(self.controles)
+        sauvegarder_tout({
+            "high_score": self.high_score,
+            "leaderboard": self.leaderboard,
+            "cles": self.cles_trouvees,
+            "niveau_infini_debloque": self.niveau_infini_debloque,
+            "tutoriel_vu": self.tutoriel_vu,
+            "achievements": self.achievements,
+            "settings": self.settings,
+        })
+
     def enregistrer_progression(self):
-        """Met à jour high score + clés sur disque."""
+        """Met à jour high score, leaderboard, cles, settings."""
         if self.score_total > self.high_score:
             self.high_score = self.score_total
+        if self.score_total > 0:
+            self.leaderboard = ajouter_score_leaderboard(self.leaderboard, self.score_total)
         if len(self.cles_trouvees) >= 4:
             self.niveau_infini_debloque = True
-        sauvegarder_progression(self.high_score, self.cles_trouvees, self.niveau_infini_debloque)
+            self.achievements, info = debloquer_achievement(self.achievements, "cles_4")
+            if info:
+                self.achievement_toast = f"{info['titre']} — {info['desc']}"
+                self.achievement_toast_timer = 180
+        if self.score_total >= 5000:
+            self.achievements, info = debloquer_achievement(self.achievements, "score_5k")
+            if info:
+                self.achievement_toast = f"{info['titre']} — {info['desc']}"
+                self.achievement_toast_timer = 180
+        self._sauver_etat()
 
     def reset_objectifs_niveau(self):
         """Remet compteurs combo / kills pour un nouveau niveau."""
@@ -341,6 +433,10 @@ class Jeu:
         self.ennemis_tues_niveau = 0
         self.cle_niveau_spawned = False
         self.dernier_spawn = 0
+        self.powerup_actif = None
+        self.game_speed_override = 1.0
+        if self.niveau == 4:
+            self.boss_nukes_used = 0
 
     def creer_menus(self):
         """Crée tous les boutons des menus"""
@@ -401,10 +497,14 @@ class Jeu:
         ]
 
         self.btns_opt = [
-            Bouton(cx, cy - 120, 400, 60, "Musique : ON", lambda: "TOGGLE_MUSIQUE"),
-            Bouton(cx, cy - 40, 400, 60, "Effets : ON", lambda: "TOGGLE_EFFETS"),
-            Bouton(cx, cy + 40, 400, 60, "Plein Écran : NON", lambda: "TOGGLE_FULLSCREEN"),
-            Bouton(cx, cy + 140, 300, 60, "RETOUR", lambda: "RETOUR_DEPUIS_OPT")
+            Bouton(cx, cy - 200, 420, 48, "Musique : ON", lambda: "TOGGLE_MUSIQUE"),
+            Bouton(cx, cy - 140, 420, 48, "Effets : ON", lambda: "TOGGLE_EFFETS"),
+            Bouton(cx, cy - 80, 420, 48, "Vol. musique : 50%", lambda: "VOL_MUSIQUE"),
+            Bouton(cx, cy - 20, 420, 48, "Vol. effets : 70%", lambda: "VOL_EFFETS"),
+            Bouton(cx, cy + 40, 420, 48, "Plein Écran : NON", lambda: "TOGGLE_FULLSCREEN"),
+            Bouton(cx, cy + 100, 420, 48, "Remap Nuke", lambda: "REMAP_NUKE"),
+            Bouton(cx, cy + 160, 420, 48, "Remap Pause", lambda: "REMAP_PAUSE"),
+            Bouton(cx, cy + 230, 300, 50, "RETOUR", lambda: "RETOUR_DEPUIS_OPT"),
         ]
 
     def draw_etoiles(self, surface):

@@ -14,6 +14,8 @@ from constantes import (
     ORANGE,
     BLEU_NUIT,
     BLEU_BOUCLIER,
+    CYAN,
+    BLEU_FONCE,
 )
 import os
 
@@ -275,27 +277,53 @@ def dessiner_menu(jeu_instance, ecran):
     for b in jeu_instance.btns_menu_img:
         b.draw(ecran)
 
-    # Afficher le bouton niveau infini si débloqué
     if jeu_instance.niveau_infini_debloque:
         jeu_instance.btn_niveau_infini.dessiner(ecran)
+        badge = pygame.font.Font(None, 26).render("MODE INFINI DEBLOQUE", True, OR)
+        ecran.blit(badge, (20, HAUTEUR_JEU - 40))
 
-    # Afficher le compteur de clés en haut à droite
     font_petite = pygame.font.Font(None, 28)
     nb_cles = len(jeu_instance.cles_trouvees)
-    couleur_cles = OR if nb_cles >= 4 else BLANC
-    txt_cles = font_petite.render(f"Cles: {nb_cles}/4", True, couleur_cles)
+    txt_cles = font_petite.render(f"Cles: {nb_cles}/4", True, OR if nb_cles >= 4 else BLANC)
     ecran.blit(txt_cles, (LARGEUR_JEU - txt_cles.get_width() - 20, 20))
-
     txt_hs = font_petite.render(f"Record: {jeu_instance.high_score}", True, OR)
     ecran.blit(txt_hs, (LARGEUR_JEU - txt_hs.get_width() - 20, 50))
 
-    # Si toutes les clés sont trouvées, afficher un message
-    if nb_cles >= 4:
-        font_msg = pygame.font.Font(None, 24)
-        txt_msg = font_msg.render("NIVEAU INFINI DEBLOQUE !", True, OR)
-        ecran.blit(txt_msg, (LARGEUR_JEU - txt_msg.get_width() - 20, 80))
+    # Top 5
+    y = 90
+    ecran.blit(font_petite.render("TOP 5", True, JAUNE), (LARGEUR_JEU - 160, y))
+    for i, entry in enumerate(getattr(jeu_instance, "leaderboard", [])[:5]):
+        y += 22
+        line = font_petite.render(f"{i+1}. {entry.get('score', 0)}", True, BLANC)
+        ecran.blit(line, (LARGEUR_JEU - 160, y))
+
+    # Achievements count
+    n_ach = len(getattr(jeu_instance, "achievements", []))
+    ecran.blit(font_petite.render(f"Trophees: {n_ach}/5", True, CYAN), (20, 20))
 
     ecran.blit(jeu_instance.logo_trump, jeu_instance.logo_rect)
+
+
+def dessiner_tutoriel(jeu_instance, ecran, grosse_font, font, petite_font):
+    ecran.fill(BLEU_FONCE)
+    titre = grosse_font.render("COMMENT JOUER", True, OR)
+    ecran.blit(titre, titre.get_rect(center=(LARGEUR_JEU // 2, 80)))
+    lines = [
+        "Deplacement : fleches (ou souris)",
+        "Tir : automatique",
+        "Nuke : touche B (remappable)",
+        "Pause / boutique : Echap",
+        "Objectif : eliminer assez d'ennemis OU survivre au timer",
+        "Cles secretes (~30s) : 4/4 = mode infini",
+        "Bonus en run : B bouclier, S spread, R ralentir",
+        "",
+        "Appuie sur une touche pour continuer",
+    ]
+    y = 180
+    for line in lines:
+        t = font.render(line, True, BLANC)
+        ecran.blit(t, t.get_rect(center=(LARGEUR_JEU // 2, y)))
+        y += 40
 
 
 def dessiner_gif_screen(jeu_instance, ecran):
@@ -332,15 +360,21 @@ def dessiner_gameover(jeu_instance, ecran, grosse_font, font):
     overlay.fill((0, 0, 0, 230))
     ecran.blit(overlay, (0, 0))
     t_go = grosse_font.render("GAME OVER", True, ROUGE)
-    ecran.blit(t_go, t_go.get_rect(center=(LARGEUR_JEU // 2, HAUTEUR_JEU // 2 - 60)))
+    ecran.blit(t_go, t_go.get_rect(center=(LARGEUR_JEU // 2, HAUTEUR_JEU // 2 - 100)))
     t_score = font.render(f"Score Final: {jeu_instance.score_total}", True, OR)
-    ecran.blit(t_score, t_score.get_rect(center=(LARGEUR_JEU // 2, HAUTEUR_JEU // 2)))
+    ecran.blit(t_score, t_score.get_rect(center=(LARGEUR_JEU // 2, HAUTEUR_JEU // 2 - 40)))
     t_hs = font.render(f"Record: {jeu_instance.high_score}", True, JAUNE)
-    ecran.blit(t_hs, t_hs.get_rect(center=(LARGEUR_JEU // 2, HAUTEUR_JEU // 2 + 40)))
+    ecran.blit(t_hs, t_hs.get_rect(center=(LARGEUR_JEU // 2, HAUTEUR_JEU // 2)))
+    y = HAUTEUR_JEU // 2 + 50
+    for i, entry in enumerate(getattr(jeu_instance, "leaderboard", [])[:5]):
+        line = font.render(f"#{i+1}  {entry.get('score', 0)}", True, BLANC)
+        ecran.blit(line, line.get_rect(center=(LARGEUR_JEU // 2, y)))
+        y += 28
+    restart = pygame.key.name(jeu_instance.cle_controle("restart")).upper()
     ecran.blit(
-        font.render("Appuie sur 'R' pour rejouer", True, BLANC),
-        font.render("Appuie sur 'R' pour rejouer", True, BLANC).get_rect(
-            center=(LARGEUR_JEU // 2, HAUTEUR_JEU // 2 + 90))
+        font.render(f"Appuie sur '{restart}' pour rejouer", True, BLANC),
+        font.render(f"Appuie sur '{restart}' pour rejouer", True, BLANC).get_rect(
+            center=(LARGEUR_JEU // 2, HAUTEUR_JEU // 2 + 220))
     )
 
 
@@ -411,14 +445,28 @@ def dessiner_gameplay(jeu_instance, ecran, font, petite_font, grosse_font, moyen
     if hasattr(jeu_instance, 'boss') and jeu_instance.boss:
         jeu_instance.boss.dessiner_laser(ecran_draw)
 
-    # Barres de vie ennemis
+    # Barres de vie ennemis + barre boss dedicacee
     for m in jeu_instance.mobs:
         if m.max_pv > 1:
             w = m.rect.width
             h = 5
-            ratio = m.pv / m.max_pv
+            ratio = max(0, m.pv / m.max_pv)
             pygame.draw.rect(ecran_draw, ROUGE, (m.rect.x, m.rect.y - 10, w, h))
             pygame.draw.rect(ecran_draw, VERT, (m.rect.x, m.rect.y - 10, w * ratio, h))
+
+    if hasattr(jeu_instance, "boss") and jeu_instance.boss and jeu_instance.boss in jeu_instance.mobs:
+        boss = jeu_instance.boss
+        bar_w = 600
+        bar_h = 18
+        bx = LARGEUR_JEU // 2 - bar_w // 2
+        by = 100
+        ratio = max(0, boss.pv / boss.max_pv)
+        pygame.draw.rect(ecran_draw, (40, 40, 40), (bx, by, bar_w, bar_h), border_radius=4)
+        couleur = VERT if boss.phase_combat == 1 else (ORANGE if boss.phase_combat == 2 else ROUGE)
+        pygame.draw.rect(ecran_draw, couleur, (bx, by, int(bar_w * ratio), bar_h), border_radius=4)
+        pygame.draw.rect(ecran_draw, BLANC, (bx, by, bar_w, bar_h), 2, border_radius=4)
+        phase_txt = petite_font.render(f"BOSS — PHASE {boss.phase_combat}", True, BLANC)
+        ecran_draw.blit(phase_txt, phase_txt.get_rect(center=(LARGEUR_JEU // 2, by - 16)))
 
     jeu_instance.vfx.draw(ecran_draw)
 
@@ -473,8 +521,28 @@ def dessiner_gameplay(jeu_instance, ecran, font, petite_font, grosse_font, moyen
         txt_combo = moyenne_font.render(f"COMBO x{jeu_instance.combo}", True, ORANGE)
         ecran_draw.blit(txt_combo, (LARGEUR_JEU // 2 - txt_combo.get_width() // 2, 100))
 
+    # Power-up actif
+    if getattr(jeu_instance, "powerup_actif", None):
+        restant = max(0, (jeu_instance.powerup_fin - pygame.time.get_ticks()) / 1000)
+        txt_pu = petite_font.render(f"Bonus {jeu_instance.powerup_actif.upper()} {restant:.1f}s", True, CYAN)
+        ecran_draw.blit(txt_pu, (LARGEUR_JEU // 2 - txt_pu.get_width() // 2, 130))
+
+    # Mode infini HUD
+    if jeu_instance.niveau == 999:
+        elapsed = (pygame.time.get_ticks() - getattr(jeu_instance, "infini_debut", pygame.time.get_ticks())) / 1000
+        txt_inf = moyenne_font.render(f"INFINI  {int(elapsed // 60)}:{int(elapsed % 60):02d}", True, OR)
+        ecran_draw.blit(txt_inf, (LARGEUR_JEU // 2 - txt_inf.get_width() // 2, HAUTEUR_JEU - 50))
+
+    # Toast achievement
+    if getattr(jeu_instance, "achievement_toast_timer", 0) > 0 and jeu_instance.achievement_toast:
+        toast = moyenne_font.render(jeu_instance.achievement_toast, True, OR)
+        bg = pygame.Surface((toast.get_width() + 40, toast.get_height() + 20), pygame.SRCALPHA)
+        bg.fill((0, 0, 0, 180))
+        ecran_draw.blit(bg, (LARGEUR_JEU // 2 - bg.get_width() // 2, HAUTEUR_JEU - 100))
+        ecran_draw.blit(toast, toast.get_rect(center=(LARGEUR_JEU // 2, HAUTEUR_JEU - 90)))
+
     # TIMER - Ne pas afficher pendant la transition et la pause
-    if jeu_instance.etat not in ("TRANSITION", "PAUSE"):
+    if jeu_instance.etat not in ("TRANSITION", "PAUSE") and jeu_instance.niveau != 999:
         # Timer global du niveau
         temps_ecoule = (pygame.time.get_ticks() - jeu_instance.debut_niveau) / 1000
 
@@ -681,6 +749,8 @@ def dessiner_jeu(jeu_instance, ecran, font, petite_font, grosse_font, moyenne_fo
         dessiner_video_niveau4(jeu_instance, ecran, font)
     elif jeu_instance.etat == "MENU":
         dessiner_menu(jeu_instance, ecran)
+    elif jeu_instance.etat == "TUTORIEL":
+        dessiner_tutoriel(jeu_instance, ecran, grosse_font, font, petite_font)
     elif jeu_instance.etat == "GIF":
         dessiner_gif_screen(jeu_instance, ecran)
     elif jeu_instance.etat == "OPTIONS":

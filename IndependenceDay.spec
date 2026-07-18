@@ -10,6 +10,17 @@ datas = [
     (str(ROOT / "assets"), "assets"),
 ]
 
+# Build lite : exclure videos si ID_LITE=1
+import os as _os
+if _os.environ.get("ID_LITE", "").strip() in ("1", "true", "yes"):
+    datas = []
+    assets_root = ROOT / "assets"
+    for sub in ("fonts", "images", "musiques", "sons"):
+        p = assets_root / sub
+        if p.exists():
+            datas.append((str(p), f"assets/{sub}"))
+
+
 hiddenimports = [
     "pygame",
     "cv2",
@@ -84,7 +95,7 @@ if sys.platform == "darwin":
     app = BUNDLE(
         coll,
         name=f"{NAME}.app",
-        icon=None,
+        icon=None if not (ROOT / "assets" / "images" / "icon.png").exists() else str(ROOT / "assets" / "images" / "icon.png"),
         bundle_identifier="com.wissemmah.independenceday",
         info_plist={
             "CFBundleDisplayName": "Independence Day",

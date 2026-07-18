@@ -42,6 +42,7 @@ class GestionnaireVFX:
         self.ecran_rouge = pygame.Surface((LARGEUR_JEU, HAUTEUR_JEU))
         self.ecran_rouge.fill(ROUGE)
         self.flash_nuke = 0
+        self.flash_kill = 0
         self.timer_degats_rouge = 0
         self.tremblement_actif = False
         self.tremblement_intensite = 0
@@ -56,6 +57,9 @@ class GestionnaireVFX:
         """Déclenche l'effet visuel de la bombe nucléaire"""
         self.flash_nuke = 255
         self.declencher_impact(intensite=20, duree=30)
+
+    def declencher_kill_flash(self):
+        self.flash_kill = FLASH_KILL_ALPHA
 
     def declencher_degats(self):
         """Déclenche l'effet visuel de dégâts"""
@@ -80,6 +84,8 @@ class GestionnaireVFX:
                 self.particules.remove(p)
         if self.flash_nuke > 0:
             self.flash_nuke -= 5
+        if self.flash_kill > 0:
+            self.flash_kill = max(0, self.flash_kill - 18)
         if self.timer_degats_rouge > 0:
             self.timer_degats_rouge -= 1
 
@@ -100,6 +106,11 @@ class GestionnaireVFX:
             s = pygame.Surface((LARGEUR_JEU, HAUTEUR_JEU))
             s.fill(BLANC)
             s.set_alpha(self.flash_nuke)
+            surface.blit(s, (0, 0))
+        if self.flash_kill > 0:
+            s = pygame.Surface((LARGEUR_JEU, HAUTEUR_JEU))
+            s.fill(BLANC)
+            s.set_alpha(self.flash_kill)
             surface.blit(s, (0, 0))
 
     def draw_low_hp(self, surface):

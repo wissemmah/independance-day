@@ -7,7 +7,7 @@ import random
 from constantes import *
 from classes.ennemis import Tornade, UFO, Comet, Meteorite
 from classes.soldat import Soldat
-from classes.items import ItemVie, ItemCle
+from classes.items import ItemVie, ItemCle, ItemPowerUp
 from classes.boss import Boss
 from classes.Niveau_infini import update_niveau_infini
 from classes.lecteur_video import LecteurVideo
@@ -34,7 +34,19 @@ def _appliquer_combo_kill(jeu_instance, mob):
     jeu_instance.ennemis_tues_niveau += 1
 
     jeu_instance.vfx.declencher_impact(intensite=4 + min(jeu_instance.combo, 6), duree=8)
+    jeu_instance.vfx.declencher_kill_flash()
+    jeu_instance.vfx.ajouter(mob.rect.centerx, mob.rect.centery, BLANC, 6)
     jeu_instance.vfx.ajouter(mob.rect.centerx, mob.rect.centery, GRIS_FONCE, 10 + min(jeu_instance.combo, 8))
+    jeu_instance.hitstop_frames = max(jeu_instance.hitstop_frames, HITSTOP_FRAMES_KILL)
+
+    if jeu_instance.combo >= 10:
+        jeu_instance.try_achievement("combo_10")
+
+    if random.random() < POWERUP_DROP_CHANCE:
+        kind = random.choice(["bouclier", "spread", "ralentir"])
+        pu = ItemPowerUp(mob.rect.centerx, mob.rect.centery, kind)
+        jeu_instance.items.add(pu)
+        jeu_instance.all_sprites.add(pu)
 
 
 def _objectif_atteint(jeu_instance):
@@ -51,6 +63,9 @@ def update_jeu(jeu_instance):
 
     jeu_instance.update_fond()
     jeu_instance.vfx.update()
+    jeu_instance.update_powerups()
+    if hasattr(jeu_instance, "joueur") and jeu_instance.joueur:
+        jeu_instance.joueur.jeu = jeu_instance
     jeu_instance.all_sprites.update()
     jeu_instance.items.update()
 
@@ -92,6 +107,8 @@ def update_jeu(jeu_instance):
     # Victoire boss
     if jeu_instance.niveau == 4:
         if hasattr(jeu_instance, 'boss') and jeu_instance.boss not in jeu_instance.mobs:
+            if getattr(jeu_instance, "boss_nukes_used", 0) == 0:
+                jeu_instance.try_achievement("boss_sans_nuke")
             jeu_instance.musique.arreter_musique()
             jeu_instance.enregistrer_progression()
 
@@ -199,7 +216,12 @@ def update_jeu(jeu_instance):
     hits = pygame.sprite.groupcollide(jeu_instance.mobs, jeu_instance.balles, False, True)
     for mob, balles_touchees in hits.items():
         mob.pv -= len(balles_touchees)
-        jeu_instance.musique.jouer_effet("degats")
+        # Sons distincts touch / kill
+        if isinstance(mob, Boss):
+            jeu_instance.musique.jouer_effet("explosion")
+            jeu_instance.hitstop_frames = max(jeu_instance.hitstop_frames, HITSTOP_FRAMES_BOSS_HIT)
+        else:
+            jeu_instance.musique.jouer_effet("degats")
         jeu_instance.vfx.ajouter(mob.rect.centerx, mob.rect.centery, JAUNE, 3)
 
         if mob.pv <= 0:
@@ -209,7 +231,7 @@ def update_jeu(jeu_instance):
 
             if isinstance(mob, Tornade):
                 jeu_instance.musique.jouer_effet("vent")
-            elif isinstance(mob, (UFO, Comet, Meteorite)):
+            elif isinstance(mob, (UFO, Comet, Meteorite, Boss)):
                 jeu_instance.musique.jouer_effet("explosion")
 
             _appliquer_combo_kill(jeu_instance, mob)
@@ -230,6 +252,10 @@ def update_jeu(jeu_instance):
             if len(jeu_instance.cles_trouvees) >= 4:
                 jeu_instance.niveau_infini_debloque = True
             jeu_instance.enregistrer_progression()
+        elif isinstance(item, ItemPowerUp):
+            jeu_instance.activer_powerup(item.kind)
+            jeu_instance.musique.jouer_effet("coin")
+            jeu_instance.vfx.ajouter(item.rect.centerx, item.rect.centery, CYAN, 12)
 
     # Collisions joueur / ennemis
     if pygame.sprite.spritecollide(jeu_instance.joueur, jeu_instance.mobs, True):
@@ -239,6 +265,16 @@ def update_jeu(jeu_instance):
             jeu_instance.vfx.declencher_degats()
             jeu_instance.vfx.ajouter(jeu_instance.joueur.rect.centerx, jeu_instance.joueur.rect.centery, ROUGE_SANG, 15)
             jeu_instance.musique.jouer_effet("degats")
+
+    if hasattr(jeu_instance, 'boss') and jeu_instance.boss and getattr(jeu_instance.boss, "charge_active", False):
+        if jeu_instance.joueur.rect.colliderect(jeu_instance.boss.rect):
+            if not jeu_instance.joueur.invincible:
+                jeu_instance.vies -= 1
+                jeu_instance.combo = 0
+                jeu_instance.vfx.declencher_degats()
+                jeu_instance.musique.jouer_effet("degats")
+                jeu_instance.joueur.invincible = True
+                jeu_instance.joueur.fin_invincibilite = pygame.time.get_ticks() + 1000
 
     if hasattr(jeu_instance, 'boss') and jeu_instance.boss and jeu_instance.boss.laser_actif:
         laser_rect = jeu_instance.boss.get_laser_rect()

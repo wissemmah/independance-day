@@ -1,6 +1,7 @@
 """
 Constantes du jeu Independence Day
 """
+import pygame
 
 # --- Dimensions (Format 16:9) ---
 LARGEUR_JEU = 1280
@@ -26,21 +27,45 @@ BLEU_BOUCLIER = (0, 191, 255)
 BLEU = (15, 32, 74)
 BLEU_FONCE = (10, 20, 50)
 CYAN = (0, 255, 255)
+VIOLET = (180, 80, 255)
 
 # --- Gameplay / équilibrage ---
-DUREE_NIVEAU_SEC = 60
+DUREE_NIVEAU_SEC = 75
 COMBO_FENETRE_MS = 1800
+HITSTOP_FRAMES_KILL = 3
+HITSTOP_FRAMES_BOSS_HIT = 2
+FLASH_KILL_ALPHA = 90
 
-# Objectif de kills pour terminer un niveau avant la fin du timer (niveaux 1-3)
 OBJECTIFS_KILLS = {
-    1: 12,
-    2: 15,
-    3: 10,
+    1: 14,
+    2: 16,
+    3: 12,
 }
 
-# Spawn par niveau : max ennemis simultanés + délai entre spawns (ms)
 SPAWN_CONFIG = {
-    1: {"max": 3, "delay": 900},
-    2: {"max": 3, "delay": 800},
-    3: {"max": 4, "delay": 1100},
+    1: {"max": 3, "delay": 950},
+    2: {"max": 3, "delay": 850},
+    3: {"max": 4, "delay": 1050},
+}
+
+POWERUP_DROP_CHANCE = 0.12
+POWERUP_DUREE_MS = 8000
+BOSS_PV = 900
+
+# Controles par defaut (remappables)
+CONTROLES_DEFAUT = {
+    "gauche": pygame.K_LEFT,
+    "droite": pygame.K_RIGHT,
+    "pause": pygame.K_ESCAPE,
+    "nuke": pygame.K_b,
+    "restart": pygame.K_r,
+    "valider": pygame.K_SPACE,
+}
+
+ACHIEVEMENTS = {
+    "cles_4": {"titre": "Collectionneur", "desc": "Recuperer les 4 cles"},
+    "combo_10": {"titre": "Combo x10", "desc": "Atteindre un combo de 10"},
+    "boss_sans_nuke": {"titre": "Puriste", "desc": "Battre le boss sans utiliser de nuke"},
+    "score_5k": {"titre": "As du score", "desc": "Atteindre 5000 points"},
+    "infini_5min": {"titre": "Survivant", "desc": "Survivre 5 min en mode infini"},
 }
